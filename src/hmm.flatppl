@@ -13,7 +13,7 @@ column_maxima(scores) = aggregate(maximum, [.j], scores[.i, .j])
 column_logsums(scores, shifts) = log.(aggregate(
     sum, [.j], exp(scores[.i, .j] - shifts[.j])
 )) .+ shifts
-safe_shifts(maxima) = ifelse.(maxima .== -inf, 0, maxima)
+safe_shifts(maxima) = ifelse.(isinf.(maxima), 0, maxima)
 log_predict_scores(scores) = column_logsums(scores, safe_shifts(column_maxima(scores)))
 log_predict(log_weights, log_transition) = log_predict_scores(transition_scores(log_weights, log_transition))
 forward_step(log_weights, i, p) = (

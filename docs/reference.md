@@ -125,7 +125,7 @@ Returns a normalized independent count-array law with aligned finite real log ra
 Y_i\mid\eta_i\sim\operatorname{Poisson}(E_i e^{\eta_i}).
 ```
 
-The caller supplies log rates per unit exposure. A scalar exposure broadcasts across observations. Means must be representable; zero exposure is a point mass at zero. A zero observed count remains in the likelihood. Exposures enter once and are not also included in `log_rates`.
+The caller supplies log rates per unit exposure. A scalar exposure broadcasts across observations. Exponentiation and the resulting means must be representable; zero exposure is a point mass at zero. A zero observed count remains in the likelihood. Exposures enter once and are not also included in `log_rates`.
 
 <a id="hmm-loglikelihood"></a>
 ## `hmm_loglikelihood(initial, transition, log_emissions)`
