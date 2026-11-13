@@ -40,7 +40,7 @@ Returns a normalized law on real vectors `[n]`, with positive integer `n` and th
 
 ```math
 E[X_i]=x_0+i\delta,\qquad
-\operatorname{Cov}(X_i,X_j)=\sigma^2\min(i,j),\qquad 1\le i,j\le n.
+\mathrm{Cov}(X_i,X_j)=\sigma^2\min(i,j),\qquad 1\le i,j\le n.
 ```
 
 The path density is the product of increment densities; observations of every state can therefore be scored through the independent increments.
@@ -99,7 +99,7 @@ For absolute times `t_i=sum(dts[1:i])` after a fixed `x_0`,
 
 ```math
 E[X_{t_i}]=m+(x_0-m)e^{-\lambda t_i},\qquad
-\operatorname{Cov}(X_{t_i},X_{t_j})=
+\mathrm{Cov}(X_{t_i},X_{t_j})=
 \frac{q^2}{2\lambda}\left(e^{-\lambda|t_i-t_j|}-e^{-\lambda(t_i+t_j)}\right).
 ```
 
@@ -122,7 +122,7 @@ Inputs are finite and aligned; every `sigma` entry is strictly positive. A scala
 Returns a normalized independent count-array law with aligned finite real log rates and finite nonnegative exposures:
 
 ```math
-Y_i\mid\eta_i\sim\operatorname{Poisson}(E_i e^{\eta_i}).
+Y_i\mid\eta_i\sim\mathrm{Poisson}(E_i e^{\eta_i}).
 ```
 
 The caller supplies log rates per unit exposure. A scalar exposure broadcasts across observations. Exponentiation and the resulting means must be representable; zero exposure is a point mass at zero. A zero observed count remains in the likelihood. Exposures enter once and are not also included in `log_rates`.
