@@ -1,0 +1,31 @@
+%%%
+# Finite-state hidden Markov marginal likelihood
+
+Rows of transition are source states, columns destination states. Emissions are
+log probabilities or log densities, with time on the first matrix axis.
+%%%
+flatppl_compat = "0.1"
+
+transition_scores(log_weights, log_transition) = addaxes(log_weights, 0, 1) .+ log_transition
+column_maxima(scores) = aggregate(maximum, [.j], scores[.i, .j])
+# An unreachable destination has an all-minus-infinity column. Subtract zero
+# there so exp(-inf) remains zero rather than evaluating -inf - -inf.
+column_logsums(scores, shifts) = log.(aggregate(
+    sum, [.j], exp(scores[.i, .j] - shifts[.j])
+)) .+ shifts
+safe_shifts(maxima) = ifelse.(maxima .== -inf, 0, maxima)
+log_predict_scores(scores) = column_logsums(scores, safe_shifts(column_maxima(scores)))
+log_predict(log_weights, log_transition) = log_predict_scores(transition_scores(log_weights, log_transition))
+forward_step(log_weights, i, p) = (
+    ifelse(i == 1, log_weights, log_predict(log_weights, p.log_transition))
+    .+ p.log_emissions[i, :]
+)
+forward_weights(initial, transition, log_emissions) = scan(
+    forward_step, log.(initial), indicesof(log_emissions[:, 1]),
+    record(log_transition = log.(transition), log_emissions = log_emissions)
+)
+hmm_loglikelihood(initial, transition, log_emissions) = logsumexp(
+    cat([log.(initial)], forward_weights(initial, transition, log_emissions))[
+        lengthof(log_emissions[:, 1]) + 1
+    ]
+)

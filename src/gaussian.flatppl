@@ -1,0 +1,31 @@
+%%%
+# Scalar Gaussian transition laws
+
+Initial states are conditioned-on values, excluded from returned trajectories.
+Normal's scale is a standard deviation; OU diffusion is the SDE noise amplitude.
+%%%
+flatppl_compat = "0.1"
+
+random_walk_step(previous, drift, sigma) = Normal(previous + drift, sigma)
+walk_callback(previous, p) = random_walk_step(previous, p.drift, p.sigma)
+random_walk(initial, n, drift, sigma) = markovchain(
+    walk_callback, initial, n, record(drift = drift, sigma = sigma)
+)
+
+ar1_step(previous, mean, rho, sigma) = Normal(mean + rho * (previous - mean), sigma)
+ar1_callback(previous, p) = ar1_step(previous, p.mean, p.rho, p.sigma)
+ar1(initial, n, mean, rho, sigma) = markovchain(
+    ar1_callback, initial, n, record(mean = mean, rho = rho, sigma = sigma)
+)
+
+# expm1 retains the short-interval variance when rate*dt is small.
+ou_variance(dt, rate, diffusion) = diffusion^2 * (-expm1(-2 * rate * dt)) / (2 * rate)
+ou_step(previous, dt, mean, rate, diffusion) = Normal(
+    previous + (mean - previous) * (-expm1(-rate * dt)),
+    sqrt(ou_variance(dt, rate, diffusion))
+)
+ou_callback(previous, dt, p) = ou_step(previous, dt, p.mean, p.rate, p.diffusion)
+ou(initial, dts, mean, rate, diffusion) = kscan(
+    ou_callback, initial, dts,
+    record(mean = mean, rate = rate, diffusion = diffusion)
+)

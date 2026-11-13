@@ -1,0 +1,9 @@
+%%%
+# Conditionally independent observation laws
+
+These helpers score observations conditional on supplied state values. They do
+not integrate unknown states or add any transition law.
+%%%
+flatppl_compat = "0.1"
+gaussian_observations(states, offset, sigma) = Normal.(states .+ offset, sigma)
+poisson_observations(log_rates, exposure) = Poisson.(exposure .* exp.(log_rates))

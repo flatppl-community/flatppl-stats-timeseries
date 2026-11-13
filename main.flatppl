@@ -1,0 +1,19 @@
+%%%
+# Time-series laws
+
+Gaussian transition laws, observation laws, and exact finite-state marginal scores.
+All shared fitted parameters cross callback boundaries explicitly.
+%%%
+flatppl_compat = "0.1"
+gaussian = load_module("src/gaussian.flatppl")
+observations = load_module("src/observations.flatppl")
+hmm = load_module("src/hmm.flatppl")
+random_walk_step = gaussian.random_walk_step
+random_walk = gaussian.random_walk
+ar1_step = gaussian.ar1_step
+ar1 = gaussian.ar1
+ou_step = gaussian.ou_step
+ou = gaussian.ou
+gaussian_observations = observations.gaussian_observations
+poisson_observations = observations.poisson_observations
+hmm_loglikelihood = hmm.hmm_loglikelihood

@@ -1,0 +1,17 @@
+%%%
+# Drift and noise from an observed Gaussian walk
+
+Eight observed states condition on x0=0. The two unknowns are drift and the
+per-step standard deviation. All states are observed; no latent trajectory
+parameters enter the posterior. Gamma uses shape/rate.
+%%%
+flatppl_compat = "0.1"
+ts = load_module("../main.flatppl")
+x_data = [0.4, 0.3, 1.0, 1.2, 1.1, 1.7, 1.9, 2.4]
+drift ~ Normal(0, 1)
+sigma ~ Gamma(3, 4)
+x ~ ts.random_walk(0, 8, drift, sigma)
+prior = lawof(record(drift = drift, sigma = sigma))
+forward = kernelof(record(x = x), drift = drift, sigma = sigma)
+L = likelihoodof(forward, record(x = x_data))
+Pi_post = bayesupdate(L, prior)

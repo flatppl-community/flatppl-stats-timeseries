@@ -1,0 +1,23 @@
+flatppl_compat = "0.1"
+a = load_module("../main.flatppl")
+x = elementof(cartpow(reals, 6))
+drift = x[1]
+sigma = x[2]
+rho = x[3]
+rate = x[4]
+diffusion = x[5]
+offset = x[6]
+emissions = rowstack([[-sigma, -rate], [-diffusion, -sigma]])
+walk_step_score = logdensityof(a.random_walk_step(0.3, drift, sigma), 0.5)
+walk_score = logdensityof(a.random_walk(0, 3, drift, sigma), [0.1, 0.5, 0.2])
+ar1_step_score = logdensityof(a.ar1_step(0.3, offset, rho, sigma), 0.5)
+ar1_score = logdensityof(a.ar1(0, 3, offset, rho, sigma), [0.1, 0.5, 0.2])
+ou_step_score = logdensityof(a.ou_step(0.3, 0.2, offset, rate, diffusion), 0.5)
+ou_score = logdensityof(a.ou(0, [0.1, 0.5, 0.2], offset, rate, diffusion), [0.1, 0.5, 0.2])
+gaussian_score = logdensityof(a.gaussian_observations([0.1, 0.5, 0.2], offset, sigma), [0.2, 0.3, 0.7])
+poisson_score = logdensityof(a.poisson_observations([drift, offset], [1, 2]), [0, 3])
+hmm_score = a.hmm_loglikelihood([0.6, 0.4], rowstack([[0.8, 0.2], [0.3, 0.7]]), emissions)
+values = [walk_step_score, walk_score, ar1_step_score, ar1_score, ou_step_score,
+    ou_score, gaussian_score, poisson_score, hmm_score]
+inputs = x
+outputs = values
