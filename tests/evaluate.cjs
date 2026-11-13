@@ -15,7 +15,7 @@ const { createWorkerHandler } = require(path.join(enginePath, 'worker.ts'));
   const sources = Object.fromEntries(modulePaths
     .map(name => [path.join(root, name), fs.readFileSync(path.join(root, name), 'utf8')]));
   // Test current source offline while preserving the example's public import path.
-  const published = 'https://raw.githubusercontent.com/BJMCox/flatppl-stats-timeseries/2c4797e2c2472016b1872754e9b3d889e715e667/';
+  const published = 'https://raw.githubusercontent.com/flatppl-community/flatppl-stats-timeseries/2c4797e2c2472016b1872754e9b3d889e715e667/';
   for (const name of modulePaths) sources[published + name] = sources[path.join(root, name)];
   const source = expressions ? 'flatppl_compat = "0.1"\na = load_module("../main.flatppl")\n'
     + expressions.map((expression, i) => `probe${i} = ${expression}`).join('\n') : request.source;

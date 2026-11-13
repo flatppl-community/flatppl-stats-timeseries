@@ -6,7 +6,7 @@ per-step standard deviation. All states are observed; no latent trajectory
 parameters enter the posterior. Gamma uses shape/rate.
 %%%
 flatppl_compat = "0.1"
-ts = load_module("https://raw.githubusercontent.com/BJMCox/flatppl-stats-timeseries/2c4797e2c2472016b1872754e9b3d889e715e667/main.flatppl")
+ts = load_module("https://raw.githubusercontent.com/flatppl-community/flatppl-stats-timeseries/2c4797e2c2472016b1872754e9b3d889e715e667/main.flatppl")
 x_data = [0.4, 0.3, 1.0, 1.2, 1.1, 1.7, 1.9, 2.4]
 drift ~ Normal(0, 1)
 sigma ~ Gamma(3, 4)
