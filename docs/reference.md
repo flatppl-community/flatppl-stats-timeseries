@@ -1,4 +1,6 @@
-# Time-series reference — 0.1
+# Time series reference
+
+Library version **0.1** · [Package overview](../README.md)
 
 Load `main.flatppl` to access the following functions. Scales are standard deviations. Time units, initial conditions, priors, and observation processes are explicit choices of the caller.
 
