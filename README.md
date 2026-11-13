@@ -2,6 +2,8 @@
 
 Gaussian random-walk, AR(1), and irregular-time Ornstein–Uhlenbeck laws for FlatPPL 0.1, independent observation laws, and exact finite-state hidden Markov log likelihoods.
 
+Run the [drift inference example](https://live.flatppl.org/#model=https%3A%2F%2Fraw.githubusercontent.com%2FBJMCox%2Fflatppl-stats-timeseries%2Fmain%2Fexamples%2Fplayground.flatppl&target=Pi_post) in the live playground. It imports the library from a pinned GitHub commit.
+
 ```flatppl
 flatppl_compat = "0.1"
 ts = load_module("main.flatppl")
