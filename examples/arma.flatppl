@@ -1,0 +1,12 @@
+%%%
+# Conditional ARMA(2,1) likelihood
+
+Initial values and innovations are fixed, most recent first.
+The mean and coefficients parameterize a finite conditional path law.
+%%%
+flatppl_compat = "0.1"
+ts = load_module("../main.flatppl")
+p = elementof(cartprod(mean = reals, phi = cartpow(reals, 2), theta = reals, sigma = posreals))
+path = ts.arma([1.2, -0.4], [0.7], 3, p.mean, p.phi, [p.theta], p.sigma)
+inputs = p
+outputs = logdensityof(path, [0.2, -0.4, 0.7])

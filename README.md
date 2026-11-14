@@ -1,32 +1,18 @@
 # flatppl-stats-timeseries
 
-[Function reference](docs/reference.md)
+[Function reference](docs/reference.md) · [Live example](https://live.flatppl.org/#model=https%3A%2F%2Fraw.githubusercontent.com%2Fflatppl-community%2Fflatppl-stats-timeseries%2Fmain%2Fexamples%2Fplayground.flatppl&target=Pi_post)
 
-Gaussian random-walk, AR(1), and irregular-time Ornstein–Uhlenbeck laws for FlatPPL 0.1, independent observation laws, and exact finite-state hidden Markov log likelihoods.
-
-Run the [drift inference example](https://live.flatppl.org/#model=https%3A%2F%2Fraw.githubusercontent.com%2Fflatppl-community%2Fflatppl-stats-timeseries%2Fmain%2Fexamples%2Fplayground.flatppl&target=Pi_post) in the live playground. It imports the library from a pinned GitHub commit.
+Gaussian random walks, AR, MA, ARMA, ARIMA, and irregular-time Ornstein–Uhlenbeck laws for FlatPPL. The library also provides observation laws and finite-state HMM likelihoods. Library version **0.1**.
 
 ```flatppl
 flatppl_compat = "0.1"
 ts = load_module("main.flatppl")
-path = ts.random_walk(0, 3, 0.2, 0.7)
-score = logdensityof(path, [0.1, 0.5, 0.2])
+path = ts.arma([1.2, -0.4], [0.7], 3, 0.4, [0.3, -0.2], [0.2], 0.7)
+score = logdensityof(path, [0.2, -0.4, 0.7])
 ```
 
-Paths exclude the fixed initial state. Gaussian scales are standard deviations; OU diffusion is the SDE noise amplitude. Parameters and priors are explicit. [Reference](docs/reference.md) lists signatures, domains, and formulas.
+Paths exclude the supplied history, which runs from most recent to oldest. Gaussian scales are standard deviations. Parameters, priors, and initial-history laws remain explicit.
 
-The [posterior example](examples/playground.flatppl) estimates drift and step noise from eight observed states. Its posterior has two unknowns and no unobserved trajectory coordinates.
+The [drift example](examples/playground.flatppl) infers two parameters from eight observed states. The [ARMA example](examples/arma.flatppl) exposes a conditional path likelihood.
 
-Run the independent mathematical checks with existing NumPy/SciPy and a JavaScript engine checkout:
-
-```sh
-FLATPPL_JS_DIR=/path/to/flatppl-js python tests/check.py
-```
-
-Compile the public vector fixture with the Rust CLI:
-
-```sh
-flatppl stablehlo tests/runtime.flatppl --dtype f64 -o /tmp/timeseries-runtime.mlir
-```
-
-`tests/oracles.py` provides independent values and Jacobians for that fixture, plus one-dimensional quadrature moments for the example posterior. These commands install no dependencies.
+See the reference for definitions, domains, numerical limits, and validation commands.
