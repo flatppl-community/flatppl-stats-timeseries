@@ -10,6 +10,10 @@ Load `main.flatppl` to access the following functions. Scales are standard devia
 | [`random_walk(initial, n, drift, sigma)`](#random-walk) | Homogeneous Gaussian walk |
 | [`ar1_step(previous, mean, rho, sigma)`](#ar1-step) | Mean-centered AR(1) transition |
 | [`ar1(initial, n, mean, rho, sigma)`](#ar1) | Homogeneous AR(1) path |
+| [`ar(initial_values, n, mean, coefficients, sigma)`](#ar) | Conditional AR(p) path |
+| [`ma(initial_innovations, n, mean, coefficients, sigma)`](#ma) | Conditional MA(q) path |
+| [`arma(initial_values, initial_innovations, n, mean, ar_coefficients, ma_coefficients, sigma)`](#arma) | Conditional ARMA(p,q) path |
+| [`arima(initial_values, initial_innovations, initial_levels, n, mean, ar_coefficients, ma_coefficients, sigma)`](#arima) | Integrated conditional ARMA path |
 | [`ou_step(previous, dt, mean, rate, diffusion)`](#ou-step) | Exact Ornstein–Uhlenbeck transition |
 | [`ou(initial, dts, mean, rate, diffusion)`](#ou) | Irregular-time OU path |
 | [`gaussian_observations(states, offset, sigma)`](#gaussian-observations) | Independent Gaussian errors |
@@ -20,7 +24,7 @@ Load `main.flatppl` to access the following functions. Scales are standard devia
 
 A path contains the states after transitions, excluding the supplied initial state. For `random_walk` and `ar1`, positive integer `n` is both the transition count and returned path length. An OU path has `lengthof(dts)` states, with `dts` the positive elapsed intervals before those states. A path law scores each transition once and supplies no density or prior for the initial value. All scalar inputs are finite unless a log emission is explicitly allowed to be `-inf`.
 
-Path constructors use `markovchain` for homogeneous chains and `kscan` for varying time intervals. Parameters enter callbacks in explicit records. Observation helpers condition on supplied state values. Combining a path with noisy observations does not analytically integrate the states; a caller must retain the latent states or supply a separate marginalization method. The finite-state HMM helper performs its stated exact discrete marginalization.
+Walk and AR(1) constructors use `markovchain`; OU uses `kscan` for varying time intervals. ARMA constructors use an invertible innovation map with a unit Jacobian. Parameters enter functions explicitly. Observation helpers condition on supplied state values. Combining a path with noisy observations does not analytically integrate the states; a caller must retain the latent states or supply a separate marginalization method. The finite-state HMM helper performs its stated exact discrete marginalization.
 
 All Gaussian laws are normalized with Lebesgue reference measure. Poisson laws use counting measure and retain factorial constants. There is no implicit prior, clipping, variance floor, or missing-observation convention.
 
@@ -69,6 +73,62 @@ X_i=m+\rho^i(x_0-m)+\sum_{k=1}^i\rho^{i-k}\epsilon_k,
 ```
 
 The initial state is fixed, so this is not a stationary initial-state model. To model a stationary series, explicitly draw the initial state from the stationary law and include that initial density once in the joint model.
+
+<a id="ar"></a>
+## `ar(initial_values, n, mean, coefficients, sigma)`
+
+Returns the normalized conditional AR(p) law given by [`arma`](#arma) with no moving-average terms.
+`coefficients=[phi_1,...,phi_p]` and `initial_values=[x_0,x_{-1},...,x_{1-p}]` have equal lengths.
+The history runs from most recent to oldest. For `p=1`, this agrees with [`ar1`](#ar1).
+
+<a id="ma"></a>
+## `ma(initial_innovations, n, mean, coefficients, sigma)`
+
+Returns the normalized conditional MA(q) law given by [`arma`](#arma) with no autoregressive terms.
+`coefficients=[theta_1,...,theta_q]` and `initial_innovations=[epsilon_0,...,epsilon_{1-q}]` have equal lengths.
+Initial innovations are fixed inputs, not random values integrated from a stationary history.
+
+<a id="arma"></a>
+## `arma(initial_values, initial_innovations, n, mean, ar_coefficients, ma_coefficients, sigma)`
+
+Returns a normalized Gaussian law on paths of positive integer length `n`, conditional on the supplied histories:
+
+```math
+X_t=m+\sum_{i=1}^{p}\phi_i(X_{t-i}-m)
+       +\epsilon_t+\sum_{j=1}^{q}\theta_j\epsilon_{t-j},
+\qquad \epsilon_t\overset{\mathrm{iid}}\sim N(0,\sigma^2).
+```
+
+All values and coefficients are finite and `sigma>0`.
+The lengths of `initial_values` and `ar_coefficients` agree, as do those of `initial_innovations` and `ma_coefficients`.
+Histories run from most recent to oldest. Either order can be zero.
+FlatPPL represents an empty vector through a derived selection, for example `filter(value -> false, [0.0])`.
+Every history length and `n` must be fixed before StableHLO compilation.
+
+The sign of the MA sum is positive. The intercept is `mean*(1-sum(ar_coefficients))`.
+`mean` is the stationary mean only when stationarity holds.
+No stationarity or invertibility restriction is needed for this finite conditional law, and neither restriction is imposed.
+A stationary initial-history model requires an explicit history law.
+
+The innovation-to-path map is triangular with unit diagonal. Its log-volume is zero.
+Density evaluation recovers innovations from the observed path and sums their normalized Normal log densities.
+The streaming recurrence uses `O(n*(p+q))` arithmetic and does not construct a dense covariance matrix.
+
+<a id="arima"></a>
+## `arima(initial_values, initial_innovations, initial_levels, n, mean, ar_coefficients, ma_coefficients, sigma)`
+
+Returns the law obtained by integrating an [`arma`](#arma) path `d=lengthof(initial_levels)` times.
+`initial_values` gives the presample history of the differenced process `difference^d(X)`, rather than the level process.
+`initial_levels=[x_0,difference(X)_0,...,difference^(d-1)(X)_0]` supplies one boundary value for each integration order.
+`mean` belongs to the differenced process.
+
+Integration proceeds from the highest difference to the level process.
+For `initial_levels=[10,3]`, second differences `[2,-1]` produce levels `[15,19]`.
+An empty `initial_levels` gives `d=0` and the same law as `arma`.
+The integration map has unit Jacobian, so the path density equals the ARMA density of its differences.
+All boundary values are finite and conditioned on. No seasonal differencing or stationary initial-history law is implicit.
+
+The [conditional ARMA example](../examples/arma.flatppl) exposes the mean, coefficients, and innovation scale as runtime inputs.
 
 <a id="ou-step"></a>
 ## `ou_step(previous, dt, mean, rate, diffusion)`
@@ -144,8 +204,28 @@ Domain: positive integer `K`, nonnegative finite `pi` summing to one, nonnegativ
 
 The implementation performs a deterministic log-domain forward `scan` with explicit shared inputs. At each transition it uses a separate maximum shift per destination. Exact zeros and unreachable states are preserved. Impossible sequences return `-inf`; derivatives of an impossible sequence's log likelihood are undefined. The cost is `O(T*K^2)` and forward states are retained by `scan`.
 
-One state reduces to the sum of its log emissions. One observation reduces to `logsumexp(log.(initial) .+ log_emissions[1,:])`. An empty emission matrix `zeros([0,K])` has log likelihood zero. To omit an observation under an ignorable missingness model, supply a row of zero log emissions; any transition before that time is still applied. This helper returns a score, not a sampling law or posterior state probabilities.
+One state reduces to the sum of its log emissions. One observation reduces to `logsumexp(log.(initial) .+ log_emissions[1,:])`. An empty emission matrix has log likelihood zero. To omit an observation under an ignorable missingness model, supply a row of zero log emissions; any transition before that time is still applied. This helper returns a score, not a sampling law or posterior state probabilities.
 
 ## Validation
 
-The public mathematical tests compare path densities with dense multivariate Gaussian laws built from independent innovation maps or the OU covariance integral. The HMM oracle enumerates every hidden sequence on short examples, including structural zeros, impossible data, empty data, one state, and three states. `tests/runtime.flatppl` exposes values for every public helper; `tests/oracles.py` supplies independent dense-law values and complex-step Jacobians.
+The public mathematical tests compare path densities with dense multivariate Gaussian laws built from independent innovation maps or the OU covariance integral. The HMM oracle enumerates every hidden sequence on short examples, including structural zeros, impossible data, empty data, one state, and three states. `tests/runtime.flatppl` exposes transition, observation, and HMM values; `tests/oracles.py` supplies independent dense-law values and complex-step Jacobians.
+
+Run the JS checks with an existing NumPy/SciPy environment:
+
+```sh
+FLATPPL_JS_DIR=/path/to/flatppl-js python tests/check.py
+FLATPPL_JS_DIR=/path/to/flatppl-js python tests/check_arma.py
+```
+
+The ARMA suite compares densities with dense triangular Gaussian solves, including zero orders, histories longer than the path, and integration orders zero through two.
+Seeded ARIMA draws check both the path mean and covariance.
+`tests/arma-runtime.flatppl` exposes the ARMA mean, coefficients, and scale for compiled values, gradients, and batching.
+
+The [drift example](../examples/playground.flatppl) estimates drift and step noise from eight observed states with no unobserved trajectory coordinates.
+`tests/oracles.py` supplies independent values and Jacobians for `tests/runtime.flatppl`, plus one-dimensional quadrature moments for that posterior.
+Gaussian scales are standard deviations. OU diffusion is the SDE noise amplitude.
+
+```sh
+flatppl stablehlo tests/runtime.flatppl --dtype f64 -o /tmp/timeseries-runtime.mlir
+flatppl stablehlo tests/arma-runtime.flatppl --dtype f64 -o /tmp/arma-runtime.mlir
+```

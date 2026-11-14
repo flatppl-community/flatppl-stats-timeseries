@@ -114,3 +114,26 @@ def posterior_moments():
     variance = moments[[2, 4]] - mean**2
     return {"mean": mean.tolist(), "variance": variance.tolist(),
             "covariance": float(moments[5] - mean.prod())}
+
+
+def arma_moments(initial_values, initial_innovations, n, mean, ar, ma, sigma, levels=()):
+    """Dense triangular Gaussian law, independent of the streaming recursion."""
+    dtype = np.result_type(mean, sigma, *ar, *ma)
+    shift = np.eye(n, k=-1)
+    lhs, rhs = np.eye(n, dtype=dtype), np.eye(n, dtype=dtype)
+    forcing = np.full(n, mean * (1 - sum(ar)), dtype=dtype)
+    for lag, coefficient in enumerate(ar, 1):
+        lhs -= coefficient * np.linalg.matrix_power(shift, lag)
+        for time in range(min(lag, n)):
+            forcing[time] += coefficient * initial_values[lag - time - 1]
+    for lag, coefficient in enumerate(ma, 1):
+        rhs += coefficient * np.linalg.matrix_power(shift, lag)
+        for time in range(min(lag, n)):
+            forcing[time] += coefficient * initial_innovations[lag - time - 1]
+    location = np.linalg.solve(lhs, forcing)
+    innovations = sigma * np.linalg.solve(lhs, rhs)
+    cumulative = np.tril(np.ones((n, n)))
+    for initial in reversed(levels):
+        location = initial + cumulative @ location
+        innovations = cumulative @ innovations
+    return location, innovations @ innovations.T

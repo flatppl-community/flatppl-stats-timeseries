@@ -1,0 +1,6 @@
+flatppl_compat = "0.1"
+ts = load_module("../main.flatppl")
+x = elementof(cartpow(reals, 4))
+model = ts.arma([3.0], [2.0], 2, x[1], [x[2]], [x[3]], x[4])
+inputs = x
+outputs = logdensityof(model, [1.3, 0.9])

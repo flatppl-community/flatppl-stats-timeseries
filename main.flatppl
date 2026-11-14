@@ -6,12 +6,17 @@ All shared fitted parameters cross callback boundaries explicitly.
 %%%
 flatppl_compat = "0.1"
 gaussian = load_module("src/gaussian.flatppl")
+autoregressive = load_module("src/arma.flatppl")
 observations = load_module("src/observations.flatppl")
 hmm = load_module("src/hmm.flatppl")
 random_walk_step = gaussian.random_walk_step
 random_walk = gaussian.random_walk
 ar1_step = gaussian.ar1_step
 ar1 = gaussian.ar1
+ar = autoregressive.ar
+ma = autoregressive.ma
+arma = autoregressive.arma
+arima = autoregressive.arima
 ou_step = gaussian.ou_step
 ou = gaussian.ou
 gaussian_observations = observations.gaussian_observations

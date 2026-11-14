@@ -1,0 +1,46 @@
+%%%
+# Conditional Gaussian ARMA and ARIMA paths
+
+Histories run from the most recent value backwards. Initial values and
+innovations are conditioned-on inputs, with no implicit stationary law.
+%%%
+flatppl_compat = "0.1"
+
+% Empty vectors are derived selections in FlatPPL, not empty array literals.
+_empty = filter(value -> false, [0.0])
+
+_shift(history, value) = cat([value], history)[indicesof(history)]
+_initial(p) = record(values = p.initial_values, errors = p.initial_innovations, output = 0.0)
+_prediction(state, p) = p.mean + sum(p.ar .* (state.values .- p.mean)) + sum(p.ma .* state.errors)
+_advance(state, value, error, output) = record(
+    values = _shift(state.values, value), errors = _shift(state.errors, error), output = output)
+_forward_value(state, error, location) = _advance(state, location + error, error, location + error)
+_forward_step(state, error, p) = _forward_value(state, error, _prediction(state, p))
+_inverse_step(state, value, p) = _advance(state, value, value - _prediction(state, p), value - _prediction(state, p))
+_forward(errors, p) = scan(_forward_step, _initial(p), errors, p).output
+_inverse(values, p) = scan(_inverse_step, _initial(p), values, p).output
+_arma_chart = bijection(_forward, _inverse, 0)
+
+% The triangular innovation-to-path map has unit diagonal and log-volume zero.
+arma(initial_values, initial_innovations, n, mean, ar_coefficients, ma_coefficients, sigma) =
+    pushfwd(_arma_chart, iid(Normal(0, sigma), n), record(
+        initial_values = initial_values, initial_innovations = initial_innovations,
+        mean = mean, ar = ar_coefficients, ma = ma_coefficients))
+ar(initial_values, n, mean, coefficients, sigma) =
+    arma(initial_values, _empty, n, mean, coefficients, _empty, sigma)
+ma(initial_innovations, n, mean, coefficients, sigma) =
+    arma(_empty, initial_innovations, n, mean, _empty, coefficients, sigma)
+
+_integrate_once(values, initial) = initial .+ cumsum(values)
+_difference_once(values, initial) = values .- cat([initial], values)[indicesof(values)]
+_integrate(values, initial_levels) =
+    cat([values], scan(_integrate_once, values, reverse(initial_levels)))[lengthof(initial_levels) + 1]
+_difference(values, initial_levels) =
+    cat([values], scan(_difference_once, values, initial_levels))[lengthof(initial_levels) + 1]
+_integration_chart = bijection(_integrate, _difference, 0)
+
+% initial_levels = [x0, difference(x)0, ...]; mean belongs to the differenced process.
+arima(initial_values, initial_innovations, initial_levels, n, mean, ar_coefficients, ma_coefficients, sigma) =
+    pushfwd(_integration_chart,
+        arma(initial_values, initial_innovations, n, mean, ar_coefficients, ma_coefficients, sigma),
+        initial_levels)
