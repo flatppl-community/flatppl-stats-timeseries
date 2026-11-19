@@ -221,9 +221,7 @@ The ARMA suite compares densities with dense triangular Gaussian solves, includi
 Seeded ARIMA draws check both the path mean and covariance.
 `tests/arma-runtime.flatppl` exposes the ARMA mean, coefficients, and scale for compiled values, gradients, and batching.
 
-The [drift example](../examples/playground.flatppl) estimates drift and step noise from eight observed states with no unobserved trajectory coordinates.
-`tests/oracles.py` supplies independent values and Jacobians for `tests/runtime.flatppl`, plus one-dimensional quadrature moments for that posterior.
-Gaussian scales are standard deviations. OU diffusion is the SDE noise amplitude.
+`tests/oracles.py` also supplies quadrature moments for the [drift example](../examples/playground.flatppl).
 
 ```sh
 flatppl stablehlo tests/runtime.flatppl --dtype f64 -o /tmp/timeseries-runtime.mlir

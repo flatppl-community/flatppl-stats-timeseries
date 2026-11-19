@@ -1,8 +1,8 @@
 %%%
 # Time-series laws
 
-Gaussian transition laws, observation laws, and exact finite-state marginal scores.
-All shared fitted parameters cross callback boundaries explicitly.
+Gaussian path laws return n new states, conditional on newest-first history.
+HMM inputs initial[K], transition[K,K], log_emissions[T,K] yield a scalar score.
 %%%
 flatppl_compat = "0.1"
 gaussian = load_module("src/gaussian.flatppl")
